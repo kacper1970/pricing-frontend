@@ -50,6 +50,12 @@
   <label for="time">Godzina wizyty:</label>
   <input type="time" id="time">
 
+  <label for="vat">Stawka VAT:</label>
+  <select id="vat">
+    <option value="8">8%</option>
+    <option value="23">23%</option>
+  </select>
+
   <label for="package">Pakiet usług:</label>
   <select id="package">
     <option value="safe">Pakiet Safe</option>
@@ -93,6 +99,7 @@
       const address = document.getElementById('address').value;
       const date = document.getElementById('date').value;
       const time = document.getElementById('time').value;
+      const vat = document.getElementById('vat').value;
       const pkg = document.getElementById('package').value;
       const override = document.getElementById('override').checked;
 
@@ -104,7 +111,7 @@
         return;
       }
 
-      const url = `/pricing/full?service=${encodeURIComponent(service)}&address=${encodeURIComponent(address)}&date=${date}&time=${time}&vat=8&package=${pkg}&override=${override}`;
+      const url = `/pricing/full?service=${encodeURIComponent(service)}&address=${encodeURIComponent(address)}&date=${date}&time=${time}&vat=${vat}&package=${pkg}&override=${override}`;
 
       try {
         const res = await fetch(url);
@@ -119,7 +126,7 @@
           <h3>Podsumowanie wyceny:</h3>
           <ul>
             <li><strong>Usługa:</strong> ${data.service}</li>
-            <li><strong>Cena bazowa:</strong> ${data.base.brutto_8.toFixed(2)} zł (brutto 8%)</li>
+            <li><strong>Cena bazowa:</strong> ${parseFloat(vat) === 8 ? data.base.brutto_8.toFixed(2) : data.base.brutto_23.toFixed(2)} zł (brutto ${vat}%)</li>
             <li><strong>Lokalizacja:</strong> ${data.location.location_type} (modyfikator: ${data.location.modifier})</li>
             <li><strong>Termin:</strong> ${data.when.type} (modyfikator: ${data.when.modifier})</li>
             <li><strong>Slot:</strong> ${data.slot.slot} (modyfikator: ${data.slot.modifier})</li>
