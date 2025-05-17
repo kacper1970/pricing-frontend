@@ -1,62 +1,84 @@
-Index
-82
-83
-84
-85
-86
-87
-88
-89
-90
-91
-92
-93
-94
-95
-96
-97
-98
-99
-100
-101
-102
-103
-104
-105
-106
-107
-108
-109
-110
-111
-112
-113
-114
-115
-116
-117
-118
-119
-120
-121
-122
-123
-124
-125
-126
-127
-128
-129
-130
-131
-132
-133
-134
-135
-136
-137
-138
-139
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Oblicz cenę usługi</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      max-width: 800px;
+      margin: auto;
+      background-color: #f9f9f9;
+    }
+    h1 {
+      text-align: center;
+    }
+    label {
+      display: block;
+      margin-top: 1rem;
+    }
+    select, input {
+      padding: 0.5rem;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      margin-top: 0.5rem;
+    }
+    button {
+      margin-top: 2rem;
+      padding: 0.75rem;
+      font-size: 1rem;
+      width: 100%;
+      cursor: pointer;
+    }
+    pre {
+      background: #eaeaea;
+      padding: 1rem;
+      white-space: pre-wrap;
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Oblicz cenę usługi</h1>
+
+  <form id="pricing-form">
+    <label for="service">Usługa:</label>
+    <select id="service" name="service" required>
+      <option value="">-- Wybierz usługę --</option>
+    </select>
+
+    <label for="address">Adres realizacji:</label>
+    <input type="text" id="address" name="address" required>
+
+    <label for="vat">Stawka VAT:</label>
+    <select id="vat" name="vat">
+      <option value="8">8%</option>
+      <option value="23">23%</option>
+    </select>
+
+    <label for="date">Data wizyty:</label>
+    <input type="date" id="date" name="date" required>
+
+    <label for="time">Godzina wizyty:</label>
+    <input type="time" id="time" name="time" required>
+
+    <label for="package">Pakiet:</label>
+    <select id="package" name="package">
+      <option value="safe">Safe</option>
+      <option value="comfort">Comfort</option>
+      <option value="priority">Priority</option>
+      <option value="all">All Inclusive</option>
+    </select>
+
+    <label>
+      <input type="checkbox" id="override" name="override">
+      Wymuś wizytę natychmiastową
+    </label>
+
+    <button type="submit">Oblicz cenę</button>
   </form>
 
   <pre id="result"></pre>
@@ -115,4 +137,3 @@ Index
   </script>
 </body>
 </html>
-
