@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>Wyceń usługę – ENERTIA</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: Arial; padding: 20px; max-width: 600px; margin: auto; }
+    label { display: block; margin-top: 10px; font-weight: bold; }
+    input, select { width: 100%; padding: 8px; margin-top: 5px; }
+    button { margin-top: 20px; padding: 10px; width: 100%; }
+    .price { font-size: 1.5em; margin-top: 20px; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <h1>Wyceń usługę</h1>
+
+  <label for="service">Usługa</label>
+  <select id="service">
+    <option>Montaż oświetlenia</option>
+    <option>Montaż gniazdka</option>
+    <!-- Dodasz resztę usług z czasem -->
+  </select>
+
+  <label for="address">Adres</label>
+  <input type="text" id="address" placeholder="np. Piasta 14, 58-160 Świebodzice">
+
+  <label for="date">Data</label>
+  <input type="date" id="date">
+
+  <label for="time">Godzina</label>
+  <input type="time" id="time">
+
+  <label for="package">Pakiet</label>
+  <select id="package">
+    <option value="Safe">Safe (0%)</option>
+    <option value="Comfort">Comfort (+25%)</option>
+    <option value="Priority">Priority (+50%)</option>
+    <option value="All Inclusive">All Inclusive (+100%)</option>
+  </select>
+
+  <label>
+    <input type="checkbox" id="override"> Wymuś NATYCHMIASTOWĄ wizytę
+  </label>
+
+  <button onclick="calculate()">Oblicz cenę</button>
+
+  <div class="price" id="priceOutput"></div>
+
+  <script>
+    async function calculate() {
+      const service = document.getElementById("service").value;
+      const address = document.getElementById("address").value;
+      const date = document.getElementById("date").value;
+      const time = document.getElementById("time").value;
+      const pkg = document.getElementById("package").value;
+      const override = document.getElementById("override").checked;
+
+      const url = new URL("https://pricing-service.onrender.com/pricing/full");
+      url.searchParams.append("service", service);
+      url.searchParams.append("address", address);
+      url.searchParams.append("date", date);
+      url.searchParams.append("time", time);
+      url.searchParams.append("package", pkg);
+      url.searchParams.append("override", override);
+
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (data.total) {
+        document.getElementById("priceOutput").textContent = "Cena końcowa: " + data.total + " zł";
+      } else {
+        document.getElementById("priceOutput").textContent = "Błąd: " + JSON.stringify(data);
+      }
+    }
+  </script>
+
+</body>
+</html>
