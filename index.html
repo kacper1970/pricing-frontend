@@ -2,8 +2,8 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Dynamiczny Cennik Usług</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -36,8 +36,10 @@
 
   <h1>Sprawdź koszt usługi elektrycznej</h1>
 
-  <label for="service">Nazwa usługi:</label>
-  <input type="text" id="service" placeholder="np. Montaż gniazdka">
+  <label for="service">Wybierz usługę:</label>
+  <select id="service">
+    <option disabled selected>Ładowanie usług...</option>
+  </select>
 
   <label for="address">Adres realizacji:</label>
   <input type="text" id="address" placeholder="np. Królowej Elżbiety 2, Świebodzice">
@@ -65,6 +67,27 @@
   <div id="result"></div>
 
   <script>
+    // Załaduj listę usług z backendu
+    async function loadServices() {
+      const serviceSelect = document.getElementById('service');
+      try {
+        const res = await fetch('/pricing/services');
+        const data = await res.json();
+        serviceSelect.innerHTML = '';
+
+        data.services.forEach(service => {
+          const option = document.createElement('option');
+          option.value = service;
+          option.textContent = service;
+          serviceSelect.appendChild(option);
+        });
+      } catch (err) {
+        serviceSelect.innerHTML = '<option>Błąd ładowania usług</option>';
+        console.error('Błąd pobierania usług:', err);
+      }
+    }
+
+    // Oblicz cenę na podstawie formularza
     async function calculate() {
       const service = document.getElementById('service').value;
       const address = document.getElementById('address').value;
@@ -109,6 +132,9 @@
         resultEl.innerHTML = `<p class="error">Błąd połączenia z serwerem: ${err.message}</p>`;
       }
     }
+
+    // Uruchom po załadowaniu strony
+    window.onload = loadServices;
   </script>
 
 </body>
