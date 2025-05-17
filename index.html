@@ -1,148 +1,118 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-  <meta charset="UTF-8">
-  <title>Dynamiczny Cennik Usług</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 40px;
-    }
-    label {
-      display: block;
-      margin-top: 10px;
-      font-weight: bold;
-    }
-    input, select, button {
-      margin-top: 5px;
-      padding: 6px;
-      width: 100%;
-      max-width: 400px;
-    }
-    #result {
-      margin-top: 30px;
-      padding: 20px;
-      border: 1px solid #ccc;
-      background-color: #f5f5f5;
-    }
-    .error {
-      color: red;
-      font-weight: bold;
-    }
-  </style>
-</head>
-<body>
+Index
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+  </form>
 
-  <h1>Sprawdź koszt usługi elektrycznej</h1>
-
-  <label for="service">Wybierz usługę:</label>
-  <select id="service">
-    <option disabled selected>Ładowanie usług...</option>
-  </select>
-
-  <label for="address">Adres realizacji:</label>
-  <input type="text" id="address" placeholder="np. Królowej Elżbiety 2, Świebodzice">
-
-  <label for="date">Data wizyty:</label>
-  <input type="date" id="date">
-
-  <label for="time">Godzina wizyty:</label>
-  <input type="time" id="time">
-
-  <label for="vat">Stawka VAT:</label>
-  <select id="vat">
-    <option value="8">8%</option>
-    <option value="23">23%</option>
-  </select>
-
-  <label for="package">Pakiet usług:</label>
-  <select id="package">
-    <option value="safe">Pakiet Safe</option>
-    <option value="comfort">Pakiet Comfort</option>
-    <option value="priority">Pakiet Priority</option>
-    <option value="all">All Inclusive</option>
-  </select>
-
-  <label>
-    <input type="checkbox" id="override"> Chcę natychmiastowej wizyty
-  </label>
-
-  <button onclick="calculate()">Oblicz cenę</button>
-
-  <div id="result"></div>
+  <pre id="result"></pre>
 
   <script>
-    // Załaduj listę usług z backendu
-    async function loadServices() {
-      const serviceSelect = document.getElementById('service');
-      try {
-        const res = await fetch('/pricing/services');
-        const data = await res.json();
-        serviceSelect.innerHTML = '';
+    const API_BASE = "https://pricing-service.onrender.com";
 
+    // Ładowanie usług
+    fetch(`${API_BASE}/pricing/services`)
+      .then(res => res.json())
+      .then(data => {
+        const select = document.getElementById("service");
         data.services.forEach(service => {
-          const option = document.createElement('option');
-          option.value = service;
-          option.textContent = service;
-          serviceSelect.appendChild(option);
+          const opt = document.createElement("option");
+          opt.value = service;
+          opt.textContent = service;
+          select.appendChild(opt);
         });
-      } catch (err) {
-        serviceSelect.innerHTML = '<option>Błąd ładowania usług</option>';
-        console.error('Błąd pobierania usług:', err);
-      }
-    }
+      })
+      .catch(err => {
+        alert("Nie udało się załadować listy usług");
+        console.error(err);
+      });
 
-    // Oblicz cenę na podstawie formularza
-    async function calculate() {
-      const service = document.getElementById('service').value;
-      const address = document.getElementById('address').value;
-      const date = document.getElementById('date').value;
-      const time = document.getElementById('time').value;
-      const vat = document.getElementById('vat').value;
-      const pkg = document.getElementById('package').value;
-      const override = document.getElementById('override').checked;
+    // Obsługa formularza
+    document.getElementById("pricing-form").addEventListener("submit", function(e) {
+      e.preventDefault();
 
-      const resultEl = document.getElementById('result');
-      resultEl.innerHTML = "";
+      const service = document.getElementById("service").value;
+      const address = document.getElementById("address").value;
+      const vat = document.getElementById("vat").value;
+      const date = document.getElementById("date").value;
+      const time = document.getElementById("time").value;
+      const package = document.getElementById("package").value;
+      const override = document.getElementById("override").checked;
 
-      if (!service || !address || !date || !time) {
-        resultEl.innerHTML = `<p class="error">Uzupełnij wszystkie pola.</p>`;
-        return;
-      }
+      const query = new URLSearchParams({
+        service,
+        address,
+        vat,
+        date,
+        time,
+        package,
+        override
+      });
 
-      const url = `/pricing/full?service=${encodeURIComponent(service)}&address=${encodeURIComponent(address)}&date=${date}&time=${time}&vat=${vat}&package=${pkg}&override=${override}`;
-
-      try {
-        const res = await fetch(url);
-        const data = await res.json();
-
-        if (!res.ok) {
-          resultEl.innerHTML = `<p class="error">Błąd: ${data.error || 'Nieznany problem'}</p>`;
-          return;
-        }
-
-        resultEl.innerHTML = `
-          <h3>Podsumowanie wyceny:</h3>
-          <ul>
-            <li><strong>Usługa:</strong> ${data.service}</li>
-            <li><strong>Cena bazowa:</strong> ${parseFloat(vat) === 8 ? data.base.brutto_8.toFixed(2) : data.base.brutto_23.toFixed(2)} zł (brutto ${vat}%)</li>
-            <li><strong>Lokalizacja:</strong> ${data.location.location_type} (modyfikator: ${data.location.modifier})</li>
-            <li><strong>Termin:</strong> ${data.when.type} (modyfikator: ${data.when.modifier})</li>
-            <li><strong>Slot:</strong> ${data.slot.slot} (modyfikator: ${data.slot.modifier})</li>
-            <li><strong>Pakiet:</strong> ${data.package.name} (modyfikator: ${data.package.modifier})</li>
-            <li><strong>Cena końcowa:</strong> ${data.final_price.toFixed(2)} zł</li>
-          </ul>
-        `;
-
-      } catch (err) {
-        resultEl.innerHTML = `<p class="error">Błąd połączenia z serwerem: ${err.message}</p>`;
-      }
-    }
-
-    // Uruchom po załadowaniu strony
-    window.onload = loadServices;
+      fetch(`${API_BASE}/pricing/full?${query}`)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById("result").textContent = JSON.stringify(data, null, 2);
+        })
+        .catch(err => {
+          document.getElementById("result").textContent = "Błąd: " + err;
+        });
+    });
   </script>
-
 </body>
 </html>
+
