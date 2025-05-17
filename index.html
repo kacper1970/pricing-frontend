@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>ENERTIA – Kalkulator usług</title>
   <style>
     body {
@@ -36,7 +36,7 @@
       margin-top: 25px;
       font-size: 18px;
       font-weight: bold;
-      white-space: pre-wrap;
+      white-space: pre-line;
     }
   </style>
 </head>
@@ -63,6 +63,12 @@
     <option value="all">Pakiet All Inclusive (+100%)</option>
   </select>
 
+  <label for="vat">Stawka VAT</label>
+  <select id="vat">
+    <option value="8">8% (mieszkania)</option>
+    <option value="23">23% (firmy)</option>
+  </select>
+
   <label>
     <input type="checkbox" id="override" />
     Wymuś tryb NATYCHMIASTOWY (override)
@@ -77,15 +83,18 @@
       try {
         const response = await fetch("https://pricing-service.onrender.com/pricing/services");
         const data = await response.json();
-        const services = data.services;
         const select = document.getElementById("service");
 
-        services.forEach(service => {
-          const opt = document.createElement("option");
-          opt.value = service;
-          opt.textContent = service;
-          select.appendChild(opt);
-        });
+        if (data.services) {
+          data.services.forEach(service => {
+            const opt = document.createElement("option");
+            opt.value = service;
+            opt.textContent = service;
+            select.appendChild(opt);
+          });
+        } else {
+          throw new Error("Brak danych usług");
+        }
       } catch (error) {
         console.error("Błąd podczas ładowania usług:", error);
       }
@@ -97,6 +106,7 @@
       const date = document.getElementById("date").value;
       const time = document.getElementById("time").value;
       const pkg = document.getElementById("package").value;
+      const vat = document.getElementById("vat").value;
       const override = document.getElementById("override").checked;
 
       if (!service || !address || !date || !time) {
@@ -110,6 +120,7 @@
       url.searchParams.append("date", date);
       url.searchParams.append("time", time);
       url.searchParams.append("package", pkg);
+      url.searchParams.append("vat", vat);
       url.searchParams.append("override", override);
 
       try {
@@ -121,12 +132,11 @@
           const price = data.final_price;
           const breakdown = `
 Usługa: ${data.service} (${data.base.netto} zł netto)
-➤ Lokalizacja: ${data.location.location_type} (modyfikator ${data.location.modifier})
-➤ Data: ${date} (${data.when.type}, modyfikator ${data.when.modifier})
-➤ Slot: ${data.slot.slot} (modyfikator ${data.slot.modifier})
-➤ Pakiet: ${data.package.name} (modyfikator ${data.package.modifier})
-━━━━━━━━━━━━━━━━━━
-Finalna cena brutto: ${price} zł
+➤ Lokalizacja: ${data.location.location_type} (×${data.location.modifier})
+➤ Data: ${date} (${data.when.type}, ×${data.when.modifier})
+➤ Slot: ${data.slot.slot} (×${data.slot.modifier})
+➤ Pakiet: ${data.package.name} (×${data.package.modifier})
+➤ Finalna cena brutto (${vat}%): ${price} zł
           `;
           document.getElementById("result").innerText = breakdown;
         } else {
