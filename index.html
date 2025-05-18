@@ -122,7 +122,8 @@
     const PRICING_API = "https://pricing-service.onrender.com";
     const CALENDAR_API = "https://calendar-service-pl5m.onrender.com";
 
-    // Załaduj usługi
+    let selectedDuration = 60;
+
     fetch(`${PRICING_API}/pricing/services`)
       .then(res => res.json())
       .then(data => {
@@ -135,7 +136,20 @@
         });
       });
 
-    // Obsługa checkboxa "Spółdzielnia"
+    document.getElementById("service").addEventListener("change", function () {
+      const service = this.value;
+      if (!service) return;
+
+      fetch(`${PRICING_API}/pricing/full?` + new URLSearchParams({
+        service, address: "Test", vat: 8, date: "2025-01-01", time: "08:00", package: "safe"  // placeholder
+      }))
+        .then(res => res.json())
+        .then(data => {
+          const czas = parseInt(data.base?.czas || "60");
+          selectedDuration = isNaN(czas) ? 60 : czas;
+        });
+    });
+
     document.getElementById("is-housing").addEventListener("change", function() {
       const checked = this.checked;
       document.getElementById("street-wrapper").style.display = checked ? "none" : "block";
@@ -156,11 +170,11 @@
       }
     });
 
-    // Po wybraniu daty pobierz dostępne sloty
     document.getElementById("date").addEventListener("change", function () {
       const date = this.value;
       if (!date) return;
-      fetch(`${CALENDAR_API}/available-slots?date=${date}`)
+
+      fetch(`${CALENDAR_API}/available-slots?date=${date}&duration=${selectedDuration}`)
         .then(res => res.json())
         .then(data => {
           const slotSelect = document.getElementById("slot");
@@ -174,7 +188,6 @@
         });
     });
 
-    // Oblicz cenę
     document.getElementById("pricing-form").addEventListener("submit", function(e) {
       e.preventDefault();
 
@@ -219,7 +232,6 @@
         });
     });
 
-    // Rezerwacja terminu
     document.getElementById("book-btn").addEventListener("click", function() {
       const form = document.getElementById("pricing-form");
       const slot = form.slot.value;
