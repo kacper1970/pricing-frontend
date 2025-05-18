@@ -137,19 +137,25 @@
       });
 
     document.getElementById("service").addEventListener("change", function () {
-      const service = this.value;
-      if (!service) return;
+  const service = this.value;
+  if (!service) return;
 
-      fetch(`${PRICING_API}/pricing/full?` + new URLSearchParams({
-        service, address: "Test", vat: 8, date: "2025-01-01", time: "08:00", package: "safe"  // placeholder
-      }))
-        .then(res => res.json())
-        .then(data => {
-          const czas = parseInt(data.base?.czas || "60");
-          selectedDuration = isNaN(czas) ? 60 : czas;
-        });
+  const address = `${document.getElementById("street").value} ${document.getElementById("house").value}, ${document.getElementById("zip").value} ${document.getElementById("city").value}`;
+
+  fetch(`${PRICING_API}/pricing/full?` + new URLSearchParams({
+    service,
+    address,
+    vat: 8,
+    date: "2025-01-01",
+    time: "08:00",
+    package: "safe"
+  }))
+    .then(res => res.json())
+    .then(data => {
+      const czas = parseInt(data.base?.czas || "60");
+      selectedDuration = isNaN(czas) ? 60 : czas;
     });
-
+});
     document.getElementById("is-housing").addEventListener("change", function() {
       const checked = this.checked;
       document.getElementById("street-wrapper").style.display = checked ? "none" : "block";
