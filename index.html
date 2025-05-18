@@ -124,7 +124,6 @@
 
   let selectedDuration = 60;
 
-  // 🧱 Funkcja pomocnicza do składania adresu
   function buildFullAddress(form) {
     const isHousing = form.is_housing.checked;
     const street = isHousing ? form["street-select"].value : form.street.value;
@@ -140,7 +139,6 @@
     return address;
   }
 
-  // 🔽 Pobierz listę usług
   fetch(`${PRICING_API}/pricing/services`)
     .then(res => res.json())
     .then(data => {
@@ -153,26 +151,34 @@
       });
     });
 
-  // 🔁 Po zmianie usługi - załaduj czas trwania
   document.getElementById("service").addEventListener("change", function () {
     const service = this.value;
     if (!service) return;
 
     const form = document.getElementById("pricing-form");
-  const address = buildFullAddress(form);
-  const date = form.date.value || new Date().toISOString().slice(0, 10);
-  const slot = form.slot.value;
-  const time = slot ? slot.split("–")[0] : "08:00";
-  const packageName = form.package.value || "safe";
+    if (!form.date.value) return;
 
-  fetch(`${PRICING_API}/pricing/full?` + new URLSearchParams({
-    service,
-    address,
-    vat: 8,
-    date,
-    time,
-    package: packageName
-  }))
+    const address = buildFullAddress(form);
+    let date = form.date.value;
+
+    if (date.includes(".")) {
+      const [d, m, y] = date.split(".");
+      date = `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+    }
+
+    const slot = form.slot.value;
+    if (!slot) return;
+    const time = slot.split("–")[0];
+    const packageName = form.package.value || "safe";
+
+    fetch(`${PRICING_API}/pricing/full?` + new URLSearchParams({
+      service,
+      address,
+      vat: 8,
+      date,
+      time,
+      package: packageName
+    }))
       .then(res => res.json())
       .then(data => {
         const czas = parseInt(data.base?.czas || "60");
@@ -180,7 +186,6 @@
       });
   });
 
-  // 📍 Przełącznik spółdzielni
   document.getElementById("is-housing").addEventListener("change", function () {
     const checked = this.checked;
     document.getElementById("street-wrapper").style.display = checked ? "none" : "block";
@@ -202,7 +207,6 @@
     }
   });
 
-  // 📅 Zmiana daty → pobierz dostępne sloty
   document.getElementById("date").addEventListener("change", function () {
     const date = this.value;
     if (!date) return;
@@ -221,7 +225,6 @@
       });
   });
 
-  // 🧮 Oblicz cenę po wysłaniu formularza
   document.getElementById("pricing-form").addEventListener("submit", function (e) {
     e.preventDefault();
 
@@ -230,6 +233,7 @@
     const vat = this.vat.value;
     const date = this.date.value;
     const slot = this.slot.value;
+    if (!slot) return alert("Proszę wybrać godzinę wizyty.");
     const time = slot.split("–")[0];
     const packageName = this.package.value;
     const override = this.override.checked;
@@ -263,7 +267,6 @@
       });
   });
 
-  // 📅 Rezerwacja terminu
   document.getElementById("book-btn").addEventListener("click", function () {
     const form = document.getElementById("pricing-form");
     const slot = form.slot.value;
