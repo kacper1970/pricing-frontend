@@ -145,7 +145,57 @@
 const PRICING_API = "https://pricing-service.onrender.com";
 const CALENDAR_API = "https://calendar-service-pl5m.onrender.com";
 
-let selectedDuration = 60; // Domyślny czas trwania wizyty
+let selectedDuration = 60; // Domyślny czas
+
+// 🔁 Gdy zmieni się usługa – pobierz czas trwania i odśwież sloty (jeśli wybrano datę)
+document.getElementById("service").addEventListener("change", () => {
+  const form = document.getElementById("pricing-form");
+  const service = form.service.value;
+
+  if (!service) return;
+
+  fetch(`${PRICING_API}/pricing/full?` + new URLSearchParams({
+    service,
+    address: buildAddressForPricing(form),
+    vat: 8,
+    date: form.date.value || new Date().toISOString().split("T")[0], // fallback
+    time: "08:00", // placeholder
+    package: form.package.value || "safe"
+  }))
+    .then(res => res.json())
+    .then(data => {
+      const czas = parseInt(data.base?.czas || "60");
+      selectedDuration = isNaN(czas) ? 60 : czas;
+
+      // Jeśli wybrano już datę, odśwież sloty
+      if (form.date.value) {
+        fetchSlotsForDate(form.date.value);
+      }
+    });
+});
+
+// 📅 Funkcja do pobierania slotów na daną datę
+function fetchSlotsForDate(date) {
+  fetch(`${CALENDAR_API}/available-slots?date=${date}&duration=${selectedDuration}`)
+    .then(res => res.json())
+    .then(data => {
+      const slotSelect = document.getElementById("slot");
+      slotSelect.innerHTML = '<option value="">-- Wybierz godzinę --</option>';
+      data.free_slots.forEach(slot => {
+        const opt = document.createElement("option");
+        opt.value = slot;
+        opt.textContent = slot;
+        slotSelect.appendChild(opt);
+      });
+    });
+}
+
+// 📅 Gdy zmieni się data – pobierz sloty z aktualnym czasem trwania
+document.getElementById("date").addEventListener("change", function () {
+  const date = this.value;
+  if (!date) return;
+  fetchSlotsForDate(date);
+});
 
 // 🧱 Adres do pricing-service (bez numeru mieszkania)
 function buildAddressForPricing(form) {
