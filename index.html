@@ -53,8 +53,17 @@
       <option value="">-- Wybierz usługę --</option>
     </select>
 
-    <label for="address">Adres realizacji:</label>
-    <input type="text" id="address" name="address" required>
+    <label for="street">Ulica:</label>
+    <input type="text" id="street" name="street" required>
+
+    <label for="number">Nr domu / mieszkania:</label>
+    <input type="text" id="number" name="number" required>
+
+    <label for="postal">Kod pocztowy:</label>
+    <input type="text" id="postal" name="postal" pattern="\d{2}-\d{3}" required>
+
+    <label for="city">Miasto:</label>
+    <input type="text" id="city" name="city" required>
 
     <label for="vat">Stawka VAT:</label>
     <select id="vat" name="vat">
@@ -134,8 +143,13 @@
     document.getElementById("pricing-form").addEventListener("submit", function(e) {
       e.preventDefault();
 
+      const street = this.street.value;
+      const number = this.number.value;
+      const postal = this.postal.value;
+      const city = this.city.value;
+      const address = `${street} ${number}, ${postal} ${city}`;
+
       const service = this.service.value;
-      const address = this.address.value;
       const vat = this.vat.value;
       const date = this.date.value;
       const slot = this.slot.value;
@@ -148,7 +162,7 @@
       }))
         .then(res => res.json())
         .then(data => {
-          window.calculatedData = data; // zapisz do późniejszego użycia przy rezerwacji
+          window.calculatedData = data;
           const summary = document.getElementById("summary");
           summary.innerHTML = `
             <h2>Podsumowanie ceny</h2>
@@ -169,13 +183,14 @@
     document.getElementById("book-btn").addEventListener("click", function() {
       const form = document.getElementById("pricing-form");
       const slot = form.slot.value;
+      const address = `${form.street.value} ${form.number.value}, ${form.postal.value} ${form.city.value}`;
 
       const payload = {
         date: form.date.value,
         slot: slot,
         name: form.name.value,
         phone: form.phone.value,
-        address: form.address.value,
+        address: address,
         problem: form.problem.value,
         urgency: window.calculatedData?.when?.type?.toLowerCase() || "standard",
         override_now: form.override.checked
