@@ -136,11 +136,16 @@
         });
       });
 
-    document.getElementById("service").addEventListener("change", function () {
+  document.getElementById("service").addEventListener("change", function () {
   const service = this.value;
   if (!service) return;
 
-  const address = `${document.getElementById("street").value} ${document.getElementById("house").value}, ${document.getElementById("zip").value} ${document.getElementById("city").value}`;
+  const street = document.getElementById("street").value;
+  const number = document.getElementById("number").value;
+  const postal = document.getElementById("postal").value;
+  const city = document.getElementById("city").value;
+
+  const address = `${street} ${number}, ${postal} ${city}`;
 
   fetch(`${PRICING_API}/pricing/full?` + new URLSearchParams({
     service,
