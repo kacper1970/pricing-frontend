@@ -225,48 +225,71 @@
       });
   });
 
-  document.getElementById("pricing-form").addEventListener("submit", function (e) {
-    e.preventDefault();
+document.getElementById("pricing-form").addEventListener("submit", function (e) {
+  e.preventDefault();
+  const statusDiv = document.getElementById("status");
+  statusDiv.textContent = ""; // Resetuj status
 
-    const address = buildFullAddress(this);
-    const service = this.service.value;
-    const vat = this.vat.value;
-    const date = this.date.value;
-    const slot = this.slot.value;
-    if (!slot) return alert("Proszę wybrać godzinę wizyty.");
-    const time = slot.split("–")[0];
-    const packageName = this.package.value;
-    const override = this.override.checked;
+  const address = buildFullAddress(this);
+  const service = this.service.value.trim();
+  const vat = this.vat.value;
+  const date = this.date.value;
+  const slot = this.slot.value;
+  const packageName = this.package.value;
+  const override = this.override.checked.toString(); // 🔧 konwersja
 
-    fetch(`${PRICING_API}/pricing/full?` + new URLSearchParams({
-      service,
-      address,
-      vat,
-      date,
-      time,
-      package: packageName,
-      override: override.toString()
-    }))
-      .then(res => res.json())
-      .then(data => {
-        window.calculatedData = data;
+  // 👉 WALIDACJA POLA
+  if (!service || !address || !date || !slot) {
+    statusDiv.style.color = "red";
+    statusDiv.textContent = "❌ Wypełnij wszystkie wymagane pola: usługa, adres, data, godzina.";
+    return;
+  }
 
-        const summary = document.getElementById("summary");
-        summary.innerHTML = `
-          <h2>Podsumowanie ceny</h2>
-          <ul>
-            <li>🔧 Usługa: <strong>${data.service}</strong></li>
-            <li>📍 Lokalizacja: <strong>${data.location.location_type}</strong> (modyfikator: ${data.location.modifier})</li>
-            <li>📅 Termin: <strong>${date}</strong> (typ: ${data.when.type}, modyfikator: ${data.when.modifier})</li>
-            <li>⏰ Slot: <strong>${data.slot.slot}</strong> (modyfikator: ${data.slot.modifier})</li>
-            <li>📦 Pakiet: <strong>${data.package.name}</strong> (modyfikator: ${data.package.modifier})</li>
-          </ul>
-          <h3>💰 Cena końcowa: <span style="font-size: 1.5rem;">${data.final_price.toFixed(2)} zł</span></h3>
-        `;
-        document.getElementById("book-btn").style.display = "block";
-      });
-  });
+  const time = slot.split(/[–-]/)[0].trim(); // Bezpieczny split
 
+  fetch(`${PRICING_API}/pricing/full?` + new URLSearchParams({
+    service,
+    address,
+    vat,
+    date,
+    time,
+    package: packageName,
+    override
+  }))
+    .then(res => {
+      if (!res.ok) throw new Error("Błąd serwera: " + res.status);
+      return res.json();
+    })
+    .then(data => {
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      window.calculatedData = data;
+
+      const summary = document.getElementById("summary");
+      summary.innerHTML = `
+        <h2>Podsumowanie ceny</h2>
+        <ul>
+          <li>🔧 Usługa: <strong>${data.service}</strong></li>
+          <li>📍 Lokalizacja: <strong>${data.location.location_type}</strong> (modyfikator: ${data.location.modifier})</li>
+          <li>📅 Termin: <strong>${date}</strong> (typ: ${data.when.type}, modyfikator: ${data.when.modifier})</li>
+          <li>⏰ Slot: <strong>${data.slot.slot}</strong> (modyfikator: ${data.slot.modifier})</li>
+          <li>📦 Pakiet: <strong>${data.package.name}</strong> (modyfikator: ${data.package.modifier})</li>
+        </ul>
+        <h3>💰 Cena końcowa: <span style="font-size: 1.5rem;">${data.final_price.toFixed(2)} zł</span></h3>
+      `;
+
+      statusDiv.style.color = "green";
+      statusDiv.textContent = "✅ Dane poprawne – wycena została przeprowadzona.";
+      document.getElementById("book-btn").style.display = "block";
+    })
+    .catch(err => {
+      console.error("❌ Błąd obliczania ceny:", err);
+      statusDiv.style.color = "red";
+      statusDiv.textContent = "❌ Błąd obliczania ceny: " + err.message;
+    });
+});
   document.getElementById("book-btn").addEventListener("click", function () {
     const form = document.getElementById("pricing-form");
     const slot = form.slot.value;
