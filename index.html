@@ -139,8 +139,8 @@
   <!-- Podsumowanie i komunikaty -->
   <div id="summary"></div>
   <div id="status" style="margin-top: 1rem; font-weight: bold;"></div>
-</body>
-  
+
+<script>
 // 🔧 KONFIGURACJA API
 const PRICING_API = "https://pricing-service.onrender.com";
 const CALENDAR_API = "https://calendar-service-pl5m.onrender.com";
@@ -338,3 +338,6 @@ document.getElementById("book-btn").addEventListener("click", function () {
       alert("✅ Zarezerwowano wizytę!\n\n" + (data.event_link || ""));
     });
 });
+</script>  
+</body>
+</html>
