@@ -53,11 +53,25 @@
       <option value="">-- Wybierz usługę --</option>
     </select>
 
-    <label for="street">Ulica:</label>
-    <input type="text" id="street" name="street" required>
+    <label><input type="checkbox" id="is-housing" name="is-housing"> Spółdzielnia</label>
 
-    <label for="number">Nr domu / mieszkania:</label>
+    <div id="street-wrapper">
+      <label for="street">Ulica:</label>
+      <input type="text" id="street" name="street">
+    </div>
+
+    <div id="street-select-wrapper" style="display: none;">
+      <label for="street-select">Ulica (lista spółdzielni):</label>
+      <select id="street-select" name="street-select">
+        <option value="">-- Wybierz ulicę --</option>
+      </select>
+    </div>
+
+    <label for="number">Nr domu:</label>
     <input type="text" id="number" name="number" required>
+
+    <label for="apartment">Nr mieszkania:</label>
+    <input type="text" id="apartment" name="apartment">
 
     <label for="postal">Kod pocztowy:</label>
     <input type="text" id="postal" name="postal" pattern="\d{2}-\d{3}" required>
@@ -121,6 +135,27 @@
         });
       });
 
+    // Obsługa checkboxa "Spółdzielnia"
+    document.getElementById("is-housing").addEventListener("change", function() {
+      const checked = this.checked;
+      document.getElementById("street-wrapper").style.display = checked ? "none" : "block";
+      document.getElementById("street-select-wrapper").style.display = checked ? "block" : "none";
+      if (checked) {
+        fetch(`${PRICING_API}/pricing/local-streets`)
+          .then(res => res.json())
+          .then(data => {
+            const select = document.getElementById("street-select");
+            select.innerHTML = '<option value="">-- Wybierz ulicę --</option>';
+            data.streets.forEach(street => {
+              const opt = document.createElement("option");
+              opt.value = street;
+              opt.textContent = street;
+              select.appendChild(opt);
+            });
+          });
+      }
+    });
+
     // Po wybraniu daty pobierz dostępne sloty
     document.getElementById("date").addEventListener("change", function () {
       const date = this.value;
@@ -143,11 +178,16 @@
     document.getElementById("pricing-form").addEventListener("submit", function(e) {
       e.preventDefault();
 
-      const street = this.street.value;
+      const isHousing = this.is_housing.checked;
+      const street = isHousing ? this["street-select"].value : this.street.value;
       const number = this.number.value;
+      const apartment = this.apartment.value;
       const postal = this.postal.value;
       const city = this.city.value;
-      const address = `${street} ${number}, ${postal} ${city}`;
+
+      let address = `${street} ${number}`;
+      if (apartment) address += `/${apartment}`;
+      address += `, ${postal} ${city}`;
 
       const service = this.service.value;
       const vat = this.vat.value;
@@ -183,7 +223,16 @@
     document.getElementById("book-btn").addEventListener("click", function() {
       const form = document.getElementById("pricing-form");
       const slot = form.slot.value;
-      const address = `${form.street.value} ${form.number.value}, ${form.postal.value} ${form.city.value}`;
+      const isHousing = form.is_housing.checked;
+      const street = isHousing ? form["street-select"].value : form.street.value;
+      const number = form.number.value;
+      const apartment = form.apartment.value;
+      const postal = form.postal.value;
+      const city = form.city.value;
+
+      let address = `${street} ${number}`;
+      if (apartment) address += `/${apartment}`;
+      address += `, ${postal} ${city}`;
 
       const payload = {
         date: form.date.value,
