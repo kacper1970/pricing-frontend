@@ -118,166 +118,178 @@
 
   <div id="summary"></div>
 
-  <script>
-    const PRICING_API = "https://pricing-service.onrender.com";
-    const CALENDAR_API = "https://calendar-service-pl5m.onrender.com";
+<script>
+  const PRICING_API = "https://pricing-service.onrender.com";
+  const CALENDAR_API = "https://calendar-service-pl5m.onrender.com";
 
-    let selectedDuration = 60;
+  let selectedDuration = 60;
 
-    fetch(`${PRICING_API}/pricing/services`)
-      .then(res => res.json())
-      .then(data => {
-        const select = document.getElementById("service");
-        data.services.forEach(service => {
-          const opt = document.createElement("option");
-          opt.value = service;
-          opt.textContent = service;
-          select.appendChild(opt);
-        });
+  // 🧱 Funkcja pomocnicza do składania adresu
+  function buildFullAddress(form) {
+    const isHousing = form.is_housing.checked;
+    const street = isHousing ? form["street-select"].value : form.street.value;
+    const number = form.number.value;
+    const apartment = form.apartment.value;
+    const postal = form.postal.value;
+    const city = form.city.value;
+
+    let address = `${street} ${number}`;
+    if (apartment) address += `/${apartment}`;
+    address += `, ${postal} ${city}`;
+
+    return address;
+  }
+
+  // 🔽 Pobierz listę usług
+  fetch(`${PRICING_API}/pricing/services`)
+    .then(res => res.json())
+    .then(data => {
+      const select = document.getElementById("service");
+      data.services.forEach(service => {
+        const opt = document.createElement("option");
+        opt.value = service;
+        opt.textContent = service;
+        select.appendChild(opt);
       });
+    });
 
+  // 🔁 Po zmianie usługi - załaduj czas trwania
   document.getElementById("service").addEventListener("change", function () {
-  const service = this.value;
-  if (!service) return;
+    const service = this.value;
+    if (!service) return;
 
-  const street = document.getElementById("street").value;
-  const number = document.getElementById("number").value;
-  const postal = document.getElementById("postal").value;
-  const city = document.getElementById("city").value;
-
-  const address = `${street} ${number}, ${postal} ${city}`;
+    const form = document.getElementById("pricing-form");
+  const address = buildFullAddress(form);
+  const date = form.date.value || new Date().toISOString().slice(0, 10);
+  const slot = form.slot.value;
+  const time = slot ? slot.split("–")[0] : "08:00";
+  const packageName = form.package.value || "safe";
 
   fetch(`${PRICING_API}/pricing/full?` + new URLSearchParams({
     service,
     address,
     vat: 8,
-    date: "2025-01-01",
-    time: "08:00",
-    package: "safe"
+    date,
+    time,
+    package: packageName
   }))
-    .then(res => res.json())
-    .then(data => {
-      const czas = parseInt(data.base?.czas || "60");
-      selectedDuration = isNaN(czas) ? 60 : czas;
-    });
-});
-    document.getElementById("is-housing").addEventListener("change", function() {
-      const checked = this.checked;
-      document.getElementById("street-wrapper").style.display = checked ? "none" : "block";
-      document.getElementById("street-select-wrapper").style.display = checked ? "block" : "none";
-      if (checked) {
-        fetch(`${PRICING_API}/pricing/local-streets`)
-          .then(res => res.json())
-          .then(data => {
-            const select = document.getElementById("street-select");
-            select.innerHTML = '<option value="">-- Wybierz ulicę --</option>';
-            data.streets.forEach(street => {
-              const opt = document.createElement("option");
-              opt.value = street;
-              opt.textContent = street;
-              select.appendChild(opt);
-            });
-          });
-      }
-    });
+      .then(res => res.json())
+      .then(data => {
+        const czas = parseInt(data.base?.czas || "60");
+        selectedDuration = isNaN(czas) ? 60 : czas;
+      });
+  });
 
-    document.getElementById("date").addEventListener("change", function () {
-      const date = this.value;
-      if (!date) return;
+  // 📍 Przełącznik spółdzielni
+  document.getElementById("is-housing").addEventListener("change", function () {
+    const checked = this.checked;
+    document.getElementById("street-wrapper").style.display = checked ? "none" : "block";
+    document.getElementById("street-select-wrapper").style.display = checked ? "block" : "none";
 
-      fetch(`${CALENDAR_API}/available-slots?date=${date}&duration=${selectedDuration}`)
+    if (checked) {
+      fetch(`${PRICING_API}/pricing/local-streets`)
         .then(res => res.json())
         .then(data => {
-          const slotSelect = document.getElementById("slot");
-          slotSelect.innerHTML = '<option value="">-- Wybierz godzinę --</option>';
-          data.free_slots.forEach(slot => {
+          const select = document.getElementById("street-select");
+          select.innerHTML = '<option value="">-- Wybierz ulicę --</option>';
+          data.streets.forEach(street => {
             const opt = document.createElement("option");
-            opt.value = slot;
-            opt.textContent = slot;
-            slotSelect.appendChild(opt);
+            opt.value = street;
+            opt.textContent = street;
+            select.appendChild(opt);
           });
         });
-    });
+    }
+  });
 
-    document.getElementById("pricing-form").addEventListener("submit", function(e) {
-      e.preventDefault();
+  // 📅 Zmiana daty → pobierz dostępne sloty
+  document.getElementById("date").addEventListener("change", function () {
+    const date = this.value;
+    if (!date) return;
 
-      const isHousing = this.is_housing.checked;
-      const street = isHousing ? this["street-select"].value : this.street.value;
-      const number = this.number.value;
-      const apartment = this.apartment.value;
-      const postal = this.postal.value;
-      const city = this.city.value;
-
-      let address = `${street} ${number}`;
-      if (apartment) address += `/${apartment}`;
-      address += `, ${postal} ${city}`;
-
-      const service = this.service.value;
-      const vat = this.vat.value;
-      const date = this.date.value;
-      const slot = this.slot.value;
-      const time = slot.split("–")[0];
-      const package = this.package.value;
-      const override = this.override.checked;
-
-      fetch(`${PRICING_API}/pricing/full?` + new URLSearchParams({
-        service, address, vat, date, time, package, override
-      }))
-        .then(res => res.json())
-        .then(data => {
-          window.calculatedData = data;
-          const summary = document.getElementById("summary");
-          summary.innerHTML = `
-            <h2>Podsumowanie ceny</h2>
-            <ul>
-              <li>🔧 Usługa: <strong>${data.service}</strong></li>
-              <li>📍 Lokalizacja: <strong>${data.location.location_type}</strong> (modyfikator: ${data.location.modifier})</li>
-              <li>📅 Termin: <strong>${date}</strong> (typ: ${data.when.type}, modyfikator: ${data.when.modifier})</li>
-              <li>⏰ Slot: <strong>${data.slot.slot}</strong> (modyfikator: ${data.slot.modifier})</li>
-              <li>📦 Pakiet: <strong>${data.package.name}</strong> (modyfikator: ${data.package.modifier})</li>
-            </ul>
-            <h3>💰 Cena końcowa: <span style="font-size: 1.5rem;">${data.final_price.toFixed(2)} zł</span></h3>
-          `;
-          document.getElementById("book-btn").style.display = "block";
+    fetch(`${CALENDAR_API}/available-slots?date=${date}&duration=${selectedDuration}`)
+      .then(res => res.json())
+      .then(data => {
+        const slotSelect = document.getElementById("slot");
+        slotSelect.innerHTML = '<option value="">-- Wybierz godzinę --</option>';
+        data.free_slots.forEach(slot => {
+          const opt = document.createElement("option");
+          opt.value = slot;
+          opt.textContent = slot;
+          slotSelect.appendChild(opt);
         });
-    });
+      });
+  });
 
-    document.getElementById("book-btn").addEventListener("click", function() {
-      const form = document.getElementById("pricing-form");
-      const slot = form.slot.value;
-      const isHousing = form.is_housing.checked;
-      const street = isHousing ? form["street-select"].value : form.street.value;
-      const number = form.number.value;
-      const apartment = form.apartment.value;
-      const postal = form.postal.value;
-      const city = form.city.value;
+  // 🧮 Oblicz cenę po wysłaniu formularza
+  document.getElementById("pricing-form").addEventListener("submit", function (e) {
+    e.preventDefault();
 
-      let address = `${street} ${number}`;
-      if (apartment) address += `/${apartment}`;
-      address += `, ${postal} ${city}`;
+    const address = buildFullAddress(this);
+    const service = this.service.value;
+    const vat = this.vat.value;
+    const date = this.date.value;
+    const slot = this.slot.value;
+    const time = slot.split("–")[0];
+    const packageName = this.package.value;
+    const override = this.override.checked;
 
-      const payload = {
-        date: form.date.value,
-        slot: slot,
-        name: form.name.value,
-        phone: form.phone.value,
-        address: address,
-        problem: form.problem.value,
-        urgency: window.calculatedData?.when?.type?.toLowerCase() || "standard",
-        override_now: form.override.checked
-      };
+    fetch(`${PRICING_API}/pricing/full?` + new URLSearchParams({
+      service,
+      address,
+      vat,
+      date,
+      time,
+      package: packageName,
+      override
+    }))
+      .then(res => res.json())
+      .then(data => {
+        window.calculatedData = data;
 
-      fetch(`${CALENDAR_API}/book`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      })
-        .then(res => res.json())
-        .then(data => {
-          alert("✅ Zarezerwowano wizytę!\n\n" + (data.event_link || ""));
-        });
-    });
-  </script>
+        const summary = document.getElementById("summary");
+        summary.innerHTML = `
+          <h2>Podsumowanie ceny</h2>
+          <ul>
+            <li>🔧 Usługa: <strong>${data.service}</strong></li>
+            <li>📍 Lokalizacja: <strong>${data.location.location_type}</strong> (modyfikator: ${data.location.modifier})</li>
+            <li>📅 Termin: <strong>${date}</strong> (typ: ${data.when.type}, modyfikator: ${data.when.modifier})</li>
+            <li>⏰ Slot: <strong>${data.slot.slot}</strong> (modyfikator: ${data.slot.modifier})</li>
+            <li>📦 Pakiet: <strong>${data.package.name}</strong> (modyfikator: ${data.package.modifier})</li>
+          </ul>
+          <h3>💰 Cena końcowa: <span style="font-size: 1.5rem;">${data.final_price.toFixed(2)} zł</span></h3>
+        `;
+        document.getElementById("book-btn").style.display = "block";
+      });
+  });
+
+  // 📅 Rezerwacja terminu
+  document.getElementById("book-btn").addEventListener("click", function () {
+    const form = document.getElementById("pricing-form");
+    const slot = form.slot.value;
+    const address = buildFullAddress(form);
+
+    const payload = {
+      date: form.date.value,
+      slot: slot,
+      name: form.name.value,
+      phone: form.phone.value,
+      address: address,
+      problem: form.problem.value,
+      urgency: window.calculatedData?.when?.type?.toLowerCase() || "standard",
+      override_now: form.override.checked
+    };
+
+    fetch(`${CALENDAR_API}/book`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+      .then(res => res.json())
+      .then(data => {
+        alert("✅ Zarezerwowano wizytę!\n\n" + (data.event_link || ""));
+      });
+  });
+</script>
 </body>
 </html>
