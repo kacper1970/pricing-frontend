@@ -334,7 +334,7 @@ document.getElementById("book-btn").addEventListener("click", function () {
     name: form.name.value,
     phone: form.phone.value,
     address: address,
-    problem: form.problem.value,
+    problem: `Usługa: ${form.service.value}\nOpis: ${form.problem.value}`,
     urgency: window.calculatedData?.when?.type?.toLowerCase() || "standard",
     override_now: form.override.checked
   };
