@@ -412,7 +412,8 @@ document.getElementById("book-btn").addEventListener("click", function () {
     address: address,
     problem: fullDescription,
     urgency: window.calculatedData?.when?.type?.toLowerCase() || "standard",
-    override_now: form.override.checked
+    override_now: form.override.checked,
+    duration: selectedDuration
   };
 
   // 📤 Wyślij do kalendarza
