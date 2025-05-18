@@ -12,17 +12,16 @@
       margin: auto;
       background-color: #f9f9f9;
     }
-    h1 {
+    h1, h2, h3 {
       text-align: center;
     }
     label {
       display: block;
       margin-top: 1rem;
     }
-    select, input {
+    select, input, textarea {
       padding: 0.5rem;
       width: 100%;
-      max-width: 100%;
       box-sizing: border-box;
       margin-top: 0.5rem;
     }
@@ -33,16 +32,20 @@
       width: 100%;
       cursor: pointer;
     }
-    pre {
-      background: #eaeaea;
-      padding: 1rem;
-      white-space: pre-wrap;
-      margin-top: 2rem;
+    #summary ul {
+      list-style: none;
+      padding: 0;
+    }
+    #summary li {
+      margin-bottom: 0.5rem;
+    }
+    #summary h3 {
+      color: green;
     }
   </style>
 </head>
 <body>
-  <h1>Oblicz cenę usługi</h1>
+  <h1>Kalkulator ceny usługi</h1>
 
   <form id="pricing-form">
     <label for="service">Usługa:</label>
@@ -62,8 +65,10 @@
     <label for="date">Data wizyty:</label>
     <input type="date" id="date" name="date" required>
 
-    <label for="time">Godzina wizyty:</label>
-    <input type="time" id="time" name="time" required>
+    <label for="slot">Dostępne godziny:</label>
+    <select id="slot" name="slot" required>
+      <option value="">-- Wybierz godzinę --</option>
+    </select>
 
     <label for="package">Pakiet:</label>
     <select id="package" name="package">
@@ -73,21 +78,29 @@
       <option value="all">All Inclusive</option>
     </select>
 
-    <label>
-      <input type="checkbox" id="override" name="override">
-      Wymuś wizytę natychmiastową
-    </label>
+    <label><input type="checkbox" id="override" name="override"> Wymuś wizytę natychmiastową</label>
+
+    <label for="name">Imię i nazwisko:</label>
+    <input type="text" id="name" name="name" required>
+
+    <label for="phone">Telefon kontaktowy:</label>
+    <input type="tel" id="phone" name="phone" required>
+
+    <label for="problem">Opis problemu:</label>
+    <textarea id="problem" name="problem" rows="3"></textarea>
 
     <button type="submit">Oblicz cenę</button>
+    <button type="button" id="book-btn" style="display:none; background-color: #4CAF50; color: white;">ZAREZERWUJ</button>
   </form>
 
-  <pre id="result"></pre>
+  <div id="summary"></div>
 
   <script>
-    const API_BASE = "https://pricing-service.onrender.com";
+    const PRICING_API = "https://pricing-service.onrender.com";
+    const CALENDAR_API = "https://calendar-service-pl5m.onrender.com";
 
-    // Ładowanie usług
-    fetch(`${API_BASE}/pricing/services`)
+    // Załaduj usługi
+    fetch(`${PRICING_API}/pricing/services`)
       .then(res => res.json())
       .then(data => {
         const select = document.getElementById("service");
@@ -97,41 +110,85 @@
           opt.textContent = service;
           select.appendChild(opt);
         });
-      })
-      .catch(err => {
-        alert("Nie udało się załadować listy usług");
-        console.error(err);
       });
 
-    // Obsługa formularza
+    // Po wybraniu daty pobierz dostępne sloty
+    document.getElementById("date").addEventListener("change", function () {
+      const date = this.value;
+      if (!date) return;
+      fetch(`${CALENDAR_API}/available-slots?date=${date}`)
+        .then(res => res.json())
+        .then(data => {
+          const slotSelect = document.getElementById("slot");
+          slotSelect.innerHTML = '<option value="">-- Wybierz godzinę --</option>';
+          data.free_slots.forEach(slot => {
+            const opt = document.createElement("option");
+            opt.value = slot;
+            opt.textContent = slot;
+            slotSelect.appendChild(opt);
+          });
+        });
+    });
+
+    // Oblicz cenę
     document.getElementById("pricing-form").addEventListener("submit", function(e) {
       e.preventDefault();
 
-      const service = document.getElementById("service").value;
-      const address = document.getElementById("address").value;
-      const vat = document.getElementById("vat").value;
-      const date = document.getElementById("date").value;
-      const time = document.getElementById("time").value;
-      const package = document.getElementById("package").value;
-      const override = document.getElementById("override").checked;
+      const service = this.service.value;
+      const address = this.address.value;
+      const vat = this.vat.value;
+      const date = this.date.value;
+      const slot = this.slot.value;
+      const time = slot.split("–")[0];
+      const package = this.package.value;
+      const override = this.override.checked;
 
-      const query = new URLSearchParams({
-        service,
-        address,
-        vat,
-        date,
-        time,
-        package,
-        override
-      });
-
-      fetch(`${API_BASE}/pricing/full?${query}`)
+      fetch(`${PRICING_API}/pricing/full?` + new URLSearchParams({
+        service, address, vat, date, time, package, override
+      }))
         .then(res => res.json())
         .then(data => {
-          document.getElementById("result").textContent = JSON.stringify(data, null, 2);
-        })
-        .catch(err => {
-          document.getElementById("result").textContent = "Błąd: " + err;
+          window.calculatedData = data; // zapisz do późniejszego użycia przy rezerwacji
+          const summary = document.getElementById("summary");
+          summary.innerHTML = `
+            <h2>Podsumowanie ceny</h2>
+            <ul>
+              <li>🔧 Usługa: <strong>${data.service}</strong></li>
+              <li>📍 Lokalizacja: <strong>${data.location.location_type}</strong> (modyfikator: ${data.location.modifier})</li>
+              <li>📅 Termin: <strong>${date}</strong> (typ: ${data.when.type}, modyfikator: ${data.when.modifier})</li>
+              <li>⏰ Slot: <strong>${data.slot.slot}</strong> (modyfikator: ${data.slot.modifier})</li>
+              <li>📦 Pakiet: <strong>${data.package.name}</strong> (modyfikator: ${data.package.modifier})</li>
+            </ul>
+            <h3>💰 Cena końcowa: <span style="font-size: 1.5rem;">${data.final_price.toFixed(2)} zł</span></h3>
+          `;
+          document.getElementById("book-btn").style.display = "block";
+        });
+    });
+
+    // Rezerwacja terminu
+    document.getElementById("book-btn").addEventListener("click", function() {
+      const form = document.getElementById("pricing-form");
+      const slot = form.slot.value;
+
+      const payload = {
+        date: form.date.value,
+        slot: slot,
+        name: form.name.value,
+        phone: form.phone.value,
+        address: form.address.value,
+        problem: form.problem.value,
+        urgency: window.calculatedData?.when?.type?.toLowerCase() || "standard",
+        override_now: form.override.checked
+      };
+
+      fetch(`${CALENDAR_API}/book`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+        .then(res => res.json())
+        .then(data => {
+          alert("✅ Zarezerwowano wizytę!\n\n" + (data.event_link || ""));
         });
     });
   </script>
