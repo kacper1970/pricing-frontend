@@ -293,33 +293,34 @@ document.getElementById("pricing-form").addEventListener("submit", function (e) 
     override
   }))
     .then(res => res.ok ? res.json() : Promise.reject("Błąd: " + res.status))
-    .then(data => {
-      if (data.error) throw new Error(data.error);
+   .then(data => {
+  if (data.error) throw new Error(data.error);
 
-      window.calculatedData = data;
-      const summary = document.getElementById("summary");
-     let dojazdHTML = "";
-if (data.location.extra_cost && data.location.extra_cost > 0) {
-  dojazdHTML = `<li>🚗 Koszt dojazdu: <strong>${data.location.extra_cost.toFixed(2)} zł</strong></li>`;
-}
+  window.calculatedData = data;
 
-summary.innerHTML = `
-  <h2>Podsumowanie ceny</h2>
-  <ul>
-    <li>🔧 Usługa: <strong>${data.service}</strong></li>
-    <li>📍 Lokalizacja: <strong>${data.location.location_type}</strong> (modyfikator: ${data.location.modifier})</li>
-    <li>📅 Termin: <strong>${date}</strong> (typ: ${data.when.type}, modyfikator: ${data.when.modifier})</li>
-    <li>⏰ Slot: <strong>${data.slot.slot}</strong> (modyfikator: ${data.slot.modifier})</li>
-    <li>📦 Pakiet: <strong>${data.package.name}</strong> (modyfikator: ${data.package.modifier})</li>
-    ${dojazdHTML}
-  </ul>
-  <h3>💰 Cena końcowa: <span style="font-size: 1.5rem;">${data.final_price.toFixed(2)} zł</span></h3>
-`;
+  const extraCost = data.location?.extra_cost || 0;
+  const finalWithTravel = data.final_price + extraCost;
 
-      statusDiv.style.color = "green";
-      statusDiv.textContent = "✅ Dane poprawne – wycena została przeprowadzona.";
-      document.getElementById("book-btn").style.display = "block";
-    })
+  const summary = document.getElementById("summary");
+  summary.innerHTML = `
+    <h2>Podsumowanie ceny</h2>
+    <ul>
+      <li>🔧 Usługa: <strong>${data.service}</strong></li>
+      <li>📍 Lokalizacja: <strong>${data.location.location_type}</strong> (modyfikator: ${data.location.modifier})</li>
+      <li>📏 Koszt dojazdu: <strong>${extraCost.toFixed(2)} zł</strong></li>
+      <li>📅 Termin: <strong>${data.when.type}</strong> (modyfikator: ${data.when.modifier})</li>
+      <li>⏰ Slot: <strong>${data.slot.slot}</strong> (modyfikator: ${data.slot.modifier})</li>
+      <li>📦 Pakiet: <strong>${data.package.name}</strong> (modyfikator: ${data.package.modifier})</li>
+    </ul>
+    <h3>💰 Cena końcowa: <span style="font-size: 1.2rem;">${data.final_price.toFixed(2)} zł</span></h3>
+    ${extraCost > 0 ? `<h3>🚗 Cena z dojazdem: <span style="font-size: 1.5rem; color: darkred;">${finalWithTravel.toFixed(2)} zł</span></h3>` : ''}
+  `;
+
+  const statusDiv = document.getElementById("status");
+  statusDiv.style.color = "green";
+  statusDiv.textContent = "✅ Dane poprawne – wycena została przeprowadzona.";
+  document.getElementById("book-btn").style.display = "block";
+})
     .catch(err => {
       statusDiv.style.color = "red";
       statusDiv.textContent = "❌ Błąd obliczania ceny: " + err.message;
@@ -334,16 +335,28 @@ document.getElementById("book-btn").addEventListener("click", function () {
   const slot = form.slot.value;
   const address = buildFullAddress(form);
 
-  const payload = {
-    date: form.date.value,
-    slot: slot,
-    name: form.name.value,
-    phone: form.phone.value,
-    address: address,
-    problem: `Usługa: ${form.service.value}\nOpis: ${form.problem.value}`,
-    urgency: window.calculatedData?.when?.type?.toLowerCase() || "standard",
-    override_now: form.override.checked
-  };
+ const baseProblem = form.problem.value;
+const finalPrice = window.calculatedData?.final_price || 0;
+const extraCost = window.calculatedData?.location?.extra_cost || 0;
+const finalWithTravel = finalPrice + extraCost;
+
+let fullDescription = baseProblem.trim();
+if (extraCost > 0) {
+  fullDescription += `\n💸 Cena z dojazdem: ${finalWithTravel.toFixed(2)} zł`;
+} else {
+  fullDescription += `\n💸 Cena końcowa: ${finalPrice.toFixed(2)} zł`;
+}
+
+const payload = {
+  date: form.date.value,
+  slot: slot,
+  name: form.name.value,
+  phone: form.phone.value,
+  address: address,
+  problem: fullDescription,
+  urgency: window.calculatedData?.when?.type?.toLowerCase() || "standard",
+  override_now: form.override.checked
+};
 
   fetch(`${CALENDAR_API}/book`, {
     method: "POST",
