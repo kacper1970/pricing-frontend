@@ -298,17 +298,23 @@ document.getElementById("pricing-form").addEventListener("submit", function (e) 
 
       window.calculatedData = data;
       const summary = document.getElementById("summary");
-      summary.innerHTML = `
-        <h2>Podsumowanie ceny</h2>
-        <ul>
-          <li>🔧 Usługa: <strong>${data.service}</strong></li>
-          <li>📍 Lokalizacja: <strong>${data.location.location_type}</strong> (modyfikator: ${data.location.modifier})</li>
-          <li>📅 Termin: <strong>${date}</strong> (typ: ${data.when.type}, modyfikator: ${data.when.modifier})</li>
-          <li>⏰ Slot: <strong>${data.slot.slot}</strong> (modyfikator: ${data.slot.modifier})</li>
-          <li>📦 Pakiet: <strong>${data.package.name}</strong> (modyfikator: ${data.package.modifier})</li>
-        </ul>
-        <h3>💰 Cena końcowa: <span style="font-size: 1.5rem;">${data.final_price.toFixed(2)} zł</span></h3>
-      `;
+     let dojazdHTML = "";
+if (data.location.extra_cost && data.location.extra_cost > 0) {
+  dojazdHTML = `<li>🚗 Koszt dojazdu: <strong>${data.location.extra_cost.toFixed(2)} zł</strong></li>`;
+}
+
+summary.innerHTML = `
+  <h2>Podsumowanie ceny</h2>
+  <ul>
+    <li>🔧 Usługa: <strong>${data.service}</strong></li>
+    <li>📍 Lokalizacja: <strong>${data.location.location_type}</strong> (modyfikator: ${data.location.modifier})</li>
+    <li>📅 Termin: <strong>${date}</strong> (typ: ${data.when.type}, modyfikator: ${data.when.modifier})</li>
+    <li>⏰ Slot: <strong>${data.slot.slot}</strong> (modyfikator: ${data.slot.modifier})</li>
+    <li>📦 Pakiet: <strong>${data.package.name}</strong> (modyfikator: ${data.package.modifier})</li>
+    ${dojazdHTML}
+  </ul>
+  <h3>💰 Cena końcowa: <span style="font-size: 1.5rem;">${data.final_price.toFixed(2)} zł</span></h3>
+`;
 
       statusDiv.style.color = "green";
       statusDiv.textContent = "✅ Dane poprawne – wycena została przeprowadzona.";
