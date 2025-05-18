@@ -335,29 +335,37 @@ document.getElementById("book-btn").addEventListener("click", function () {
   const slot = form.slot.value;
   const address = buildFullAddress(form);
 
- const baseProblem = form.problem.value;
-const finalPrice = window.calculatedData?.final_price || 0;
-const extraCost = window.calculatedData?.location?.extra_cost || 0;
-const finalWithTravel = finalPrice + extraCost;
+  // 🟢 Pobierz nazwę usługi z wybranego <option>
+  const selectedServiceOption = form.service.options[form.service.selectedIndex];
+  const serviceName = selectedServiceOption ? selectedServiceOption.textContent : form.service.value;
 
-let fullDescription = `Usługa: ${serviceName}\nOpis: ${baseProblem}`;
-if (extraCost > 0) {
-  fullDescription += `\n💸 Cena z dojazdem: ${finalWithTravel.toFixed(2)} zł`;
-} else {
-  fullDescription += `\n💸 Cena końcowa: ${finalPrice.toFixed(2)} zł`;
-}
+  // 💰 Obliczenia ceny i dopłaty za dojazd
+  const baseProblem = form.problem.value.trim();
+  const finalPrice = window.calculatedData?.final_price || 0;
+  const extraCost = window.calculatedData?.location?.extra_cost || 0;
+  const finalWithTravel = finalPrice + extraCost;
 
-const payload = {
-  date: form.date.value,
-  slot: slot,
-  name: form.name.value,
-  phone: form.phone.value,
-  address: address,
-  problem: fullDescription,
-  urgency: window.calculatedData?.when?.type?.toLowerCase() || "standard",
-  override_now: form.override.checked
-};
+  // 📝 Zbuduj pełny opis do pola problem
+  let fullDescription = `Usługa: ${serviceName}\nOpis: ${baseProblem}`;
+  if (extraCost > 0) {
+    fullDescription += `\n💸 Cena z dojazdem: ${finalWithTravel.toFixed(2)} zł`;
+  } else {
+    fullDescription += `\n💸 Cena końcowa: ${finalPrice.toFixed(2)} zł`;
+  }
 
+  // 📦 Payload do API kalendarza
+  const payload = {
+    date: form.date.value,
+    slot: slot,
+    name: form.name.value,
+    phone: form.phone.value,
+    address: address,
+    problem: fullDescription,
+    urgency: window.calculatedData?.when?.type?.toLowerCase() || "standard",
+    override_now: form.override.checked
+  };
+
+  // 📤 Wyślij do kalendarza
   fetch(`${CALENDAR_API}/book`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -366,6 +374,9 @@ const payload = {
     .then(res => res.json())
     .then(data => {
       alert("✅ Zarezerwowano wizytę!\n\n" + (data.event_link || ""));
+    })
+    .catch(err => {
+      alert("❌ Błąd rezerwacji:\n" + err.message);
     });
 });
 </script>  
