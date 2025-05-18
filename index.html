@@ -147,7 +147,18 @@ const CALENDAR_API = "https://calendar-service-pl5m.onrender.com";
 
 let selectedDuration = 60; // Domyślny czas trwania wizyty
 
-// 🧱 Funkcja budująca adres z formularza
+// 🧱 Adres do pricing-service (bez numeru mieszkania)
+function buildAddressForPricing(form) {
+  const isHousing = form.is_housing.checked;
+  const street = isHousing ? form["street-select"].value : form.street.value;
+  const number = form.number.value;
+  const postal = form.postal.value;
+  const city = form.city.value;
+
+  return `${street} ${number}, ${postal} ${city}`;
+}
+
+// 🧱 Pełny adres do kalendarza/rezerwacji (z numerem mieszkania)
 function buildFullAddress(form) {
   const isHousing = form.is_housing.checked;
   const street = isHousing ? form["street-select"].value : form.street.value;
@@ -252,7 +263,7 @@ document.getElementById("pricing-form").addEventListener("submit", function (e) 
   const statusDiv = document.getElementById("status");
   statusDiv.textContent = "";
 
-  const address = buildFullAddress(this);
+  const address = buildAddressForPricing(this);
   const service = this.service.value.trim();
   const vat = this.vat.value;
   const date = this.date.value;
