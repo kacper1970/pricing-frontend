@@ -340,7 +340,7 @@ const finalPrice = window.calculatedData?.final_price || 0;
 const extraCost = window.calculatedData?.location?.extra_cost || 0;
 const finalWithTravel = finalPrice + extraCost;
 
-let fullDescription = baseProblem.trim();
+let fullDescription = `Usługa: ${serviceName}\nOpis: ${baseProblem}`;
 if (extraCost > 0) {
   fullDescription += `\n💸 Cena z dojazdem: ${finalWithTravel.toFixed(2)} zł`;
 } else {
